@@ -1,12 +1,12 @@
-# 武将台｜三国杀面杀选将器
+# 面杀助手｜三国杀面杀选将器
 
 一个面向线下身份局的三国杀武将筛选与随机抽取工具。支持按势力、系列和稀有度筛选，按名字搜索，随机抽取武将，并查看势力、体力和完整技能。
 
-![武将台预览](public/og.png)
+![面杀助手预览](public/og.png)
 
 ## 在线使用
 
-[打开武将台](https://sanguosha-hero-draw.netlify.app)
+[打开面杀助手](https://miansha-assistant.netlify.app)
 
 ## 功能
 

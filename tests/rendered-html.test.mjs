@@ -29,7 +29,7 @@ test("server-renders the finished hero draw app", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>武将台｜三国杀面杀选将器<\/title>/i);
+  assert.match(html, /<title>面杀助手｜三国杀面杀选将器<\/title>/i);
   assert.match(html, /定下牌池/);
   assert.match(html, /抽将开战/);
   assert.match(html, /681/);

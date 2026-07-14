@@ -331,10 +331,10 @@ export default function Home() {
   return (
     <main>
       <header className="site-header">
-        <a className="brand" href="#top" aria-label="武将台首页">
+        <a className="brand" href="#top" aria-label="面杀助手首页">
           <span className="brand-seal">将</span>
           <span>
-            <b>武将台</b>
+            <b>面杀助手</b>
             <small>线下面杀选将器</small>
           </span>
         </a>
@@ -481,7 +481,7 @@ export default function Home() {
                 <div className="empty-stage">
                   <div className="deck-stack" aria-hidden="true">
                     <i /><i />
-                    <div><span>将</span><b>武将台</b></div>
+                    <div><span>将</span><b>面杀助手</b></div>
                   </div>
                   <div>
                     <p>已从官方武将录中筛出</p>
@@ -576,7 +576,7 @@ export default function Home() {
         </section>
 
         <footer>
-          <div className="footer-mark"><span>将</span> 武将台</div>
+          <div className="footer-mark"><span>将</span> 面杀助手</div>
           <p>数据整理自三国杀 OL 官网公开武将资料，立绘与角色版权归原权利方所有。</p>
           <a href="https://www.sanguosha.com/hero" rel="noreferrer" target="_blank">
             查看官方武将录 ↗
