@@ -35,7 +35,13 @@ const PACKS = [
 const RARITIES = ["普通", "稀有", "史诗", "传说", "限定"];
 const VISIBLE_LIMIT = 18;
 
-const RECOMMENDED_PACKS = ["标准", "风林火山", "一将成名", "界限突破"];
+const RECOMMENDED_PACKS = [
+  "标准",
+  "风林火山",
+  "一将成名",
+  "界限突破",
+  "神将",
+];
 const CLASSIC_MYTH_HEROES = new Set([
   "魏延", "夏侯渊", "曹仁", "小乔", "典韦", "荀彧", "庞统", "卧龙诸葛亮",
   "太史慈", "庞德", "颜良文丑", "袁绍", "徐晃", "曹丕", "孙坚", "董卓",
@@ -53,6 +59,15 @@ const CLASSIC_BREAKTHROUGH_HEROES = new Set([
   "界姜维", "界贾诩", "界鲁肃", "界张郃", "界孟获", "界徐晃", "界蔡文姬",
   "界荀彧", "界典韦", "界颜良文丑", "界张昭张纮",
 ]);
+const BALANCED_CLASSIC_GODS = new Set([
+  "神关羽",
+  "神吕蒙",
+  "神周瑜",
+  "神诸葛亮",
+  "神吕布",
+  "神赵云",
+  "神司马懿",
+]);
 
 function isRecommendedHero(hero: Hero) {
   if (hero.pack === "标准") return true;
@@ -61,6 +76,7 @@ function isRecommendedHero(hero: Hero) {
   if (hero.pack === "界限突破") {
     return CLASSIC_BREAKTHROUGH_HEROES.has(hero.name);
   }
+  if (hero.pack === "神将") return BALANCED_CLASSIC_GODS.has(hero.name);
   return false;
 }
 
@@ -289,7 +305,7 @@ export default function Home() {
     }
 
     setRecommendedOnly(true);
-    setSelectedFactions(["魏", "蜀", "吴", "群"]);
+    setSelectedFactions(["魏", "蜀", "吴", "群", "神"]);
     setSelectedPacks([...RECOMMENDED_PACKS]);
     setSelectedRarities([...RARITIES]);
   };
