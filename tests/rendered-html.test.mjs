@@ -34,7 +34,7 @@ test("server-renders the finished hero draw app", async () => {
   assert.match(html, /抽将开战/);
   assert.match(html, /681/);
   assert.match(html, /推荐将池/);
-  assert.match(html, /196/);
+  assert.match(html, /201/);
   assert.match(html, /og\.png/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });

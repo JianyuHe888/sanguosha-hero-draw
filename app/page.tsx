@@ -41,42 +41,21 @@ const RECOMMENDED_PACKS = [
   "一将成名",
   "界限突破",
   "神将",
+  "其他",
 ];
-const CLASSIC_MYTH_HEROES = new Set([
-  "魏延", "夏侯渊", "曹仁", "小乔", "典韦", "荀彧", "庞统", "卧龙诸葛亮",
-  "太史慈", "庞德", "颜良文丑", "袁绍", "徐晃", "曹丕", "孙坚", "董卓",
-  "祝融", "孟获", "贾诩", "鲁肃", "张郃", "邓艾", "姜维", "刘禅",
-  "孙策", "张昭张弘", "左慈", "蔡文姬", "黄忠", "周泰", "于吉", "张角",
-]);
-const CLASSIC_BREAKTHROUGH_HEROES = new Set([
-  "界黄忠", "界刘备", "界关羽", "界张飞", "界赵云", "界马超", "界徐庶",
-  "界甘宁", "界吕蒙", "界黄盖", "界周瑜", "界大乔", "界陆逊", "界曹操",
-  "界司马懿", "界夏侯惇", "界张辽", "界许褚", "界郭嘉", "界李典", "界华佗",
-  "界吕布", "界公孙瓒", "界诸葛亮", "界黄月英", "界孙权", "界孙尚香",
-  "界甄姬", "界貂蝉", "界华雄", "界左慈", "界张角", "界于吉", "界袁绍",
-  "界刘禅", "界孙策", "界夏侯渊", "界卧龙诸葛亮", "界庞统", "界魏延",
-  "界小乔", "界孙坚", "界庞德", "界太史慈", "界董卓", "界邓艾", "界祝融",
-  "界姜维", "界贾诩", "界鲁肃", "界张郃", "界孟获", "界徐晃", "界蔡文姬",
-  "界荀彧", "界典韦", "界颜良文丑", "界张昭张纮",
-]);
-const BALANCED_CLASSIC_GODS = new Set([
-  "神关羽",
-  "神吕蒙",
-  "神周瑜",
-  "神诸葛亮",
-  "神吕布",
-  "神赵云",
-  "神司马懿",
-]);
 
 function isRecommendedHero(hero: Hero) {
+  const catalogId = Number(hero.id);
+
   if (hero.pack === "标准") return true;
   if (hero.pack === "一将成名") return true;
-  if (hero.pack === "风林火山") return CLASSIC_MYTH_HEROES.has(hero.name);
+  // 以 2018 年 9 月新服上线为代际分界，保留此前各身份系列的发行批次。
+  if (hero.pack === "风林火山") return catalogId <= 362;
   if (hero.pack === "界限突破") {
-    return CLASSIC_BREAKTHROUGH_HEROES.has(hero.name);
+    return catalogId === 26 || (catalogId >= 299 && catalogId <= 320);
   }
-  if (hero.pack === "神将") return BALANCED_CLASSIC_GODS.has(hero.name);
+  if (hero.pack === "神将") return catalogId >= 201 && catalogId <= 208;
+  if (hero.pack === "其他") return catalogId <= 140;
   return false;
 }
 
