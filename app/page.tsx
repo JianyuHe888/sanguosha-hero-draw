@@ -282,6 +282,9 @@ export default function Home() {
   const toggleRecommendedPool = () => {
     if (recommendedOnly) {
       setRecommendedOnly(false);
+      setSelectedFactions([...FACTIONS]);
+      setSelectedPacks([...PACKS]);
+      setSelectedRarities([...RARITIES]);
       return;
     }
 
