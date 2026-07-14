@@ -35,6 +35,39 @@ const PACKS = [
 const RARITIES = ["普通", "稀有", "史诗", "传说", "限定"];
 const VISIBLE_LIMIT = 18;
 
+const RECOMMENDED_PACKS = ["标准", "风林火山", "一将成名", "界限突破"];
+const CLASSIC_MYTH_HEROES = new Set([
+  "魏延", "夏侯渊", "曹仁", "小乔", "典韦", "荀彧", "庞统", "卧龙诸葛亮",
+  "太史慈", "庞德", "颜良文丑", "袁绍", "徐晃", "曹丕", "孙坚", "董卓",
+  "祝融", "孟获", "贾诩", "鲁肃", "张郃", "邓艾", "姜维", "刘禅",
+  "孙策", "张昭张弘", "左慈", "蔡文姬", "黄忠", "周泰", "于吉", "张角",
+]);
+const CLASSIC_BREAKTHROUGH_HEROES = new Set([
+  "界黄忠", "界刘备", "界关羽", "界张飞", "界赵云", "界马超", "界徐庶",
+  "界甘宁", "界吕蒙", "界黄盖", "界周瑜", "界大乔", "界陆逊", "界曹操",
+  "界司马懿", "界夏侯惇", "界张辽", "界许褚", "界郭嘉", "界李典", "界华佗",
+  "界吕布", "界公孙瓒", "界诸葛亮", "界黄月英", "界孙权", "界孙尚香",
+  "界甄姬", "界貂蝉", "界华雄", "界左慈", "界张角", "界于吉", "界袁绍",
+  "界刘禅", "界孙策", "界夏侯渊", "界卧龙诸葛亮", "界庞统", "界魏延",
+  "界小乔", "界孙坚", "界庞德", "界太史慈", "界董卓", "界邓艾", "界祝融",
+  "界姜维", "界贾诩", "界鲁肃", "界张郃", "界孟获", "界徐晃", "界蔡文姬",
+  "界荀彧", "界典韦", "界颜良文丑", "界张昭张纮",
+]);
+
+function isRecommendedHero(hero: Hero) {
+  if (hero.pack === "标准") return true;
+  if (hero.pack === "一将成名") return true;
+  if (hero.pack === "风林火山") return CLASSIC_MYTH_HEROES.has(hero.name);
+  if (hero.pack === "界限突破") {
+    return CLASSIC_BREAKTHROUGH_HEROES.has(hero.name);
+  }
+  return false;
+}
+
+const recommendedHeroIds = new Set(
+  heroes.filter(isRecommendedHero).map((hero) => hero.id),
+);
+
 const counts = {
   factions: Object.fromEntries(
     FACTIONS.map((value) => [
@@ -200,6 +233,7 @@ export default function Home() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [inspected, setInspected] = useState<Hero | null>(null);
+  const [recommendedOnly, setRecommendedOnly] = useState(false);
 
   const filteredHeroes = useMemo(() => {
     const needle = normalize(query);
@@ -208,17 +242,21 @@ export default function Home() {
         selectedFactions.includes(hero.faction) &&
         selectedPacks.includes(hero.pack) &&
         selectedRarities.includes(hero.rarity) &&
+        (!recommendedOnly || recommendedHeroIds.has(hero.id)) &&
         (!needle ||
           normalize(hero.name).includes(needle) ||
           normalize(hero.pack).includes(needle)),
     );
-  }, [query, selectedFactions, selectedPacks, selectedRarities]);
+  }, [query, recommendedOnly, selectedFactions, selectedPacks, selectedRarities]);
 
   const availableCount = noRepeat
     ? filteredHeroes.filter((hero) => !usedIds.has(hero.id)).length
     : filteredHeroes.length;
 
-  useEffect(() => setShowAll(false), [query, selectedFactions, selectedPacks]);
+  useEffect(
+    () => setShowAll(false),
+    [query, recommendedOnly, selectedFactions, selectedPacks],
+  );
 
   useEffect(() => {
     if (!inspected) return;
@@ -237,6 +275,19 @@ export default function Home() {
     setQuery("");
     setSelectedFactions([...FACTIONS]);
     setSelectedPacks([...PACKS]);
+    setSelectedRarities([...RARITIES]);
+    setRecommendedOnly(false);
+  };
+
+  const toggleRecommendedPool = () => {
+    if (recommendedOnly) {
+      setRecommendedOnly(false);
+      return;
+    }
+
+    setRecommendedOnly(true);
+    setSelectedFactions(["魏", "蜀", "吴", "群"]);
+    setSelectedPacks([...RECOMMENDED_PACKS]);
     setSelectedRarities([...RARITIES]);
   };
 
@@ -329,9 +380,19 @@ export default function Home() {
                 <span>RANGE / 选将范围</span>
                 <h2>圈定牌池</h2>
               </div>
-              <button className="reset-button" onClick={resetFilters} type="button">
-                重置
-              </button>
+              <div className="panel-actions">
+                <button
+                  aria-pressed={recommendedOnly}
+                  className={recommendedOnly ? "preset-button active" : "preset-button"}
+                  onClick={toggleRecommendedPool}
+                  type="button"
+                >
+                  推荐将池 <b>{recommendedHeroIds.size}</b>
+                </button>
+                <button className="reset-button" onClick={resetFilters} type="button">
+                  重置
+                </button>
+              </div>
             </div>
 
             <ChoiceGroup

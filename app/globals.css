@@ -100,6 +100,15 @@ button { color: inherit; }
 .panel-title h2, .stage-heading h2, .catalog-heading h2 { margin: 7px 0 0; font-size: 25px; letter-spacing: .06em; }
 .reset-button { border: 0; background: transparent; color: #766d61; font-family: system-ui, sans-serif; font-size: 12px; cursor: pointer; padding: 8px; }
 .reset-button:hover { color: var(--cinnabar); }
+.panel-actions { display: flex; align-items: center; gap: 5px; }
+.preset-button {
+  min-height: 32px; padding: 0 10px; border: 1px solid rgba(167,51,39,.35);
+  background: rgba(255,255,255,.3); color: var(--cinnabar-dark); cursor: pointer;
+  font-family: system-ui, sans-serif; font-size: 11px; transition: .18s ease;
+}
+.preset-button b { margin-left: 3px; font-size: 10px; font-weight: 650; opacity: .7; }
+.preset-button:hover { border-color: var(--cinnabar); background: rgba(255,255,255,.55); }
+.preset-button.active { border-color: var(--cinnabar-dark); background: var(--cinnabar); color: #f8ecda; }
 
 .filter-group { padding: 24px 0; border-bottom: 1px solid var(--line); }
 .filter-heading { margin-bottom: 14px; align-items: center; }
@@ -315,6 +324,8 @@ body.modal-open { overflow: hidden; }
   .intro-note { font-size: 13px; }
   .search-box { min-height: 56px; padding-inline: 13px; }
   .control-panel { padding: 22px 18px; }
+  .panel-title { align-items: flex-start; }
+  .panel-actions { align-items: flex-end; flex-direction: column; }
   .draw-stage { padding: 28px 18px 22px; }
   .pool-counter strong { font-size: 29px; }
   .result-area { min-height: 410px; padding-top: 20px; }
