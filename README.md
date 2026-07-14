@@ -6,7 +6,7 @@
 
 ## 在线使用
 
-[打开武将台](https://wujiangtai-hero-draw.liujunyang19.chatgpt.site)
+[打开武将台](https://sanguosha-hero-draw.netlify.app)
 
 ## 功能
 

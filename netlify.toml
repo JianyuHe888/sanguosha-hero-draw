@@ -1,0 +1,12 @@
+[build]
+  command = "pnpm run build:netlify"
+  publish = "netlify-dist"
+
+[build.environment]
+  NODE_VERSION = "22.13.0"
+  PNPM_VERSION = "10.12.1"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
