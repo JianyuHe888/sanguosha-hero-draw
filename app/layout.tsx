@@ -4,7 +4,7 @@ import "./globals.css";
 
 const title = "武将台｜三国杀面杀选将器";
 const description =
-  "从 166 张实体身份局武将牌中按系列和年份筛选，随机抽取并全屏查看完整原始卡面。";
+  "按势力、系列与稀有度筛选 681 名官方武将，随机抽取、名字搜索，并查看势力、体力与技能。";
 
 export async function generateMetadata(): Promise<Metadata> {
   const incoming = await headers();
@@ -25,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
       locale: "zh_CN",
       images: [
         {
-          url: `${origin}/og-v2.png`,
+          url: `${origin}/og.png`,
           width: 1536,
           height: 1024,
           alt: "武将台——定下牌池，抽将开战",
@@ -36,7 +36,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: "summary_large_image",
       title,
       description,
-      images: [`${origin}/og-v2.png`],
+      images: [`${origin}/og.png`],
     },
   };
 }
