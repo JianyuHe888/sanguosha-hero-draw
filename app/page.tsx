@@ -1,103 +1,83 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import heroData from "./data/heroes.json";
+import cardData from "./data/identity-cards.json";
 
-type Hero = {
+type IdentityCard = {
   id: string;
   name: string;
-  faction: string;
-  hp: number;
-  rarity: string;
-  pack: string;
+  year: string;
+  code: string;
+  series: string;
   image: string;
-  officialUrl: string;
+  sourceUrl: string;
 };
 
-const heroes = heroData as Hero[];
-const FACTIONS = ["魏", "蜀", "吴", "群", "晋", "神"];
-const PACKS = [
-  "标准",
-  "风林火山",
-  "一将成名",
-  "界限突破",
-  "谋",
-  "神将",
-  "国战",
-  "门阀士族",
-  "魔",
-  "其他",
-];
-const RARITIES = ["普通", "稀有", "史诗", "传说", "限定"];
-const VISIBLE_LIMIT = 18;
+const cards = cardData as IdentityCard[];
+const YEARS = ["2008", "2010", "2011", "2012", "2013", "2014"];
+const SERIES = ["标准与神话再临", "SP", "一将成名", "神将", "铜雀台", "特别版"];
+const BACK_IMAGE =
+  "https://patchwiki.biligame.com/images/tg/1/1b/qxxgvolrjaze1such21e8l4gzepse75.png";
+const CATALOG_LIMIT = 20;
 
 const counts = {
-  factions: Object.fromEntries(
-    FACTIONS.map((value) => [
-      value,
-      heroes.filter((hero) => hero.faction === value).length,
-    ]),
+  years: Object.fromEntries(
+    YEARS.map((year) => [year, cards.filter((card) => card.year === year).length]),
   ),
-  packs: Object.fromEntries(
-    PACKS.map((value) => [
-      value,
-      heroes.filter((hero) => hero.pack === value).length,
-    ]),
-  ),
-  rarities: Object.fromEntries(
-    RARITIES.map((value) => [
-      value,
-      heroes.filter((hero) => hero.rarity === value).length,
+  series: Object.fromEntries(
+    SERIES.map((series) => [
+      series,
+      cards.filter((card) => card.series === series).length,
     ]),
   ),
 };
 
 function normalize(value: string) {
-  return value.toLocaleLowerCase("zh-CN").replace(/[·\s]/g, "");
+  return value.toLocaleLowerCase("zh-CN").replace(/[·\s._-]/g, "");
 }
 
-function toggleChoice(current: string[], value: string, universe: string[]) {
-  if (current.length === universe.length) return [value];
+function toggleChoice(current: string[], value: string, all: string[]) {
+  if (current.length === all.length) return [value];
   if (current.includes(value)) return current.filter((item) => item !== value);
   return [...current, value];
 }
 
-function randomize<T>(items: T[]) {
-  const shuffled = [...items];
-  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+function shuffle<T>(items: T[]) {
+  const result = [...items];
+  for (let index = result.length - 1; index > 0; index -= 1) {
     const sample = new Uint32Array(1);
     window.crypto.getRandomValues(sample);
     const target = sample[0] % (index + 1);
-    [shuffled[index], shuffled[target]] = [shuffled[target], shuffled[index]];
+    [result[index], result[target]] = [result[target], result[index]];
   }
-  return shuffled;
+  return result;
 }
 
 function ChoiceGroup({
+  index,
   title,
-  eyebrow,
   choices,
   selected,
   groupCounts,
   onChange,
 }: {
+  index: string;
   title: string;
-  eyebrow: string;
   choices: string[];
   selected: string[];
   groupCounts: Record<string, number>;
   onChange: (next: string[]) => void;
 }) {
-  const isAll = selected.length === choices.length;
+  const allSelected = selected.length === choices.length;
   return (
     <section className="filter-group">
       <div className="filter-heading">
         <div>
-          <span>{eyebrow}</span>
+          <span>{index}</span>
           <h3>{title}</h3>
         </div>
         <button
-          className={isAll ? "text-button active" : "text-button"}
+          className={allSelected ? "text-button active" : "text-button"}
           onClick={() => onChange([...choices])}
           type="button"
         >
@@ -106,15 +86,13 @@ function ChoiceGroup({
       </div>
       <div className="choice-grid">
         {choices.map((choice) => {
-          const isSelected = selected.includes(choice);
+          const active = selected.includes(choice);
           return (
             <button
-              aria-pressed={isSelected}
-              className={isSelected ? "choice active" : "choice"}
+              aria-pressed={active}
+              className={active ? "choice active" : "choice"}
               key={choice}
-              onClick={() =>
-                onChange(toggleChoice(selected, choice, choices))
-              }
+              onClick={() => onChange(toggleChoice(selected, choice, choices))}
               type="button"
             >
               <span>{choice}</span>
@@ -127,109 +105,85 @@ function ChoiceGroup({
   );
 }
 
-function HeroCard({
-  hero,
-  compact = false,
-  onInspect,
+function RealCard({
+  card,
+  size = "result",
+  onOpen,
 }: {
-  hero: Hero;
-  compact?: boolean;
-  onInspect?: (hero: Hero) => void;
+  card: IdentityCard;
+  size?: "result" | "catalog";
+  onOpen: (card: IdentityCard) => void;
 }) {
   return (
-    <article
-      className={compact ? "hero-card compact" : "hero-card"}
-      data-faction={hero.faction}
+    <button
+      aria-label={`全屏查看${card.name}武将牌`}
+      className={`real-card ${size}`}
+      onClick={() => onOpen(card)}
+      type="button"
     >
-      <div className="card-grain" />
-      <div className="card-topline">
-        <span className="faction-seal">{hero.faction}</span>
-        <span className="rarity">{hero.rarity}</span>
-      </div>
-      <img
-        alt={`${hero.name}官方武将立绘`}
-        className="hero-art"
-        loading={compact ? "lazy" : "eager"}
-        onError={(event) => {
-          event.currentTarget.style.display = "none";
-        }}
-        src={hero.image}
-      />
-      <div className="silhouette" aria-hidden="true">
-        将
-      </div>
-      <div className="ink-wash" />
-      <div className="hero-caption">
-        <div>
-          <p>{hero.pack}</p>
-          <h3>{hero.name}</h3>
-        </div>
-        <div className="hp" aria-label={`${hero.hp}点体力`}>
-          {Array.from({ length: Math.min(hero.hp, 6) }, (_, index) => (
-            <i key={index}>◆</i>
-          ))}
-          {hero.hp > 6 && <b>+{hero.hp - 6}</b>}
-        </div>
-      </div>
-      {onInspect && (
-        <button
-          aria-label={`查看${hero.name}`}
-          className="card-hitarea"
-          onClick={() => onInspect(hero)}
-          type="button"
+      <span className="real-card-image">
+        <img
+          alt={`${card.name} ${card.year}年完整武将牌`}
+          loading={size === "catalog" ? "lazy" : "eager"}
+          src={card.image}
         />
-      )}
-    </article>
+      </span>
+      <span className="real-card-meta">
+        <b>{card.name}</b>
+        <small>{card.year} · {card.code}</small>
+      </span>
+    </button>
   );
 }
 
 export default function Home() {
   const [query, setQuery] = useState("");
-  const [selectedFactions, setSelectedFactions] = useState([...FACTIONS]);
-  const [selectedPacks, setSelectedPacks] = useState([...PACKS]);
-  const [selectedRarities, setSelectedRarities] = useState([...RARITIES]);
+  const [selectedYears, setSelectedYears] = useState([...YEARS]);
+  const [selectedSeries, setSelectedSeries] = useState([...SERIES]);
   const [drawCount, setDrawCount] = useState(1);
   const [noRepeat, setNoRepeat] = useState(true);
-  const [drawn, setDrawn] = useState<Hero[]>([]);
-  const [history, setHistory] = useState<Hero[]>([]);
+  const [drawn, setDrawn] = useState<IdentityCard[]>([]);
+  const [history, setHistory] = useState<IdentityCard[]>([]);
   const [usedIds, setUsedIds] = useState<Set<string>>(new Set());
   const [isDrawing, setIsDrawing] = useState(false);
   const [showAll, setShowAll] = useState(false);
-  const [inspected, setInspected] = useState<Hero | null>(null);
+  const [openedCard, setOpenedCard] = useState<IdentityCard | null>(null);
 
-  const filteredHeroes = useMemo(() => {
+  const filteredCards = useMemo(() => {
     const needle = normalize(query);
-    return heroes.filter(
-      (hero) =>
-        selectedFactions.includes(hero.faction) &&
-        selectedPacks.includes(hero.pack) &&
-        selectedRarities.includes(hero.rarity) &&
+    return cards.filter(
+      (card) =>
+        selectedYears.includes(card.year) &&
+        selectedSeries.includes(card.series) &&
         (!needle ||
-          normalize(hero.name).includes(needle) ||
-          normalize(hero.pack).includes(needle)),
+          normalize(card.name).includes(needle) ||
+          normalize(card.code).includes(needle)),
     );
-  }, [query, selectedFactions, selectedPacks, selectedRarities]);
+  }, [query, selectedYears, selectedSeries]);
 
   const availableCount = noRepeat
-    ? filteredHeroes.filter((hero) => !usedIds.has(hero.id)).length
-    : filteredHeroes.length;
+    ? filteredCards.filter((card) => !usedIds.has(card.id)).length
+    : filteredCards.length;
 
-  useEffect(() => setShowAll(false), [query, selectedFactions, selectedPacks]);
+  useEffect(() => setShowAll(false), [query, selectedYears, selectedSeries]);
 
   useEffect(() => {
-    if (!inspected) return;
+    if (!openedCard) return;
     const close = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setInspected(null);
+      if (event.key === "Escape") setOpenedCard(null);
     };
     window.addEventListener("keydown", close);
-    return () => window.removeEventListener("keydown", close);
-  }, [inspected]);
+    document.body.classList.add("viewer-open");
+    return () => {
+      window.removeEventListener("keydown", close);
+      document.body.classList.remove("viewer-open");
+    };
+  }, [openedCard]);
 
   const resetFilters = () => {
     setQuery("");
-    setSelectedFactions([...FACTIONS]);
-    setSelectedPacks([...PACKS]);
-    setSelectedRarities([...RARITIES]);
+    setSelectedYears([...YEARS]);
+    setSelectedSeries([...SERIES]);
   };
 
   const clearRound = () => {
@@ -238,38 +192,37 @@ export default function Home() {
     setUsedIds(new Set());
   };
 
-  const drawHeroes = () => {
-    if (filteredHeroes.length === 0 || isDrawing) return;
-
+  const drawCards = () => {
+    if (filteredCards.length === 0 || isDrawing) return;
     let eligible = noRepeat
-      ? filteredHeroes.filter((hero) => !usedIds.has(hero.id))
-      : filteredHeroes;
+      ? filteredCards.filter((card) => !usedIds.has(card.id))
+      : filteredCards;
     let nextUsed = new Set(usedIds);
 
     if (eligible.length === 0 && noRepeat) {
-      eligible = filteredHeroes;
+      eligible = filteredCards;
       nextUsed = new Set();
     }
 
     setIsDrawing(true);
     window.setTimeout(() => {
-      const picks = randomize(eligible).slice(
+      const picks = shuffle(eligible).slice(
         0,
         Math.min(drawCount, eligible.length),
       );
       setDrawn(picks);
       setHistory((current) => [...picks, ...current].slice(0, 30));
       if (noRepeat) {
-        picks.forEach((hero) => nextUsed.add(hero.id));
+        picks.forEach((card) => nextUsed.add(card.id));
         setUsedIds(nextUsed);
       }
       setIsDrawing(false);
-    }, 560);
+    }, 520);
   };
 
-  const visibleHeroes = showAll
-    ? filteredHeroes
-    : filteredHeroes.slice(0, VISIBLE_LIMIT);
+  const visibleCards = showAll
+    ? filteredCards
+    : filteredCards.slice(0, CATALOG_LIMIT);
 
   return (
     <main>
@@ -278,23 +231,23 @@ export default function Home() {
           <span className="brand-seal">将</span>
           <span>
             <b>武将台</b>
-            <small>线下面杀选将器</small>
+            <small>实体身份局选将器</small>
           </span>
         </a>
         <div className="header-source">
           <span className="live-dot" />
-          三国杀 OL 官网武将录
-          <b>{heroes.length}</b>
+          身份局实体将面
+          <b>{cards.length}</b>
         </div>
       </header>
 
       <div className="page-shell" id="top">
         <section className="hero-intro">
           <div className="intro-copy">
-            <p className="kicker"><span>面杀利器</span> 公平 · 快速 · 不重复</p>
-            <h1>定下牌池，<em>抽将开战。</em></h1>
+            <p className="kicker"><span>只收身份局</span> 实体卡面 · 原牌展示</p>
+            <h1>抽到哪张，<em>就亮哪张。</em></h1>
             <p className="intro-note">
-              从官方武将录中按势力、系列与稀有度圈定范围。输入姓名，也能立刻找到那位武将。
+              牌池只保留实体身份局武将牌。点开任何武将，直接全屏查看原始完整卡面，不再用网页重画。
             </p>
           </div>
           <label className="search-box">
@@ -302,15 +255,11 @@ export default function Home() {
             <input
               aria-label="按武将名字搜索"
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="搜索武将名，如：赵云、界曹操、谋…"
+              placeholder="搜索武将名或编号，如：赵云、SP008…"
               type="search"
               value={query}
             />
-            {query && (
-              <button onClick={() => setQuery("")} type="button">
-                清除
-              </button>
-            )}
+            {query && <button onClick={() => setQuery("")} type="button">清除</button>}
           </label>
         </section>
 
@@ -318,37 +267,27 @@ export default function Home() {
           <aside className="control-panel">
             <div className="panel-title">
               <div>
-                <span>RANGE / 选将范围</span>
-                <h2>圈定牌池</h2>
+                <span>RANGE / 身份局范围</span>
+                <h2>选择将池</h2>
               </div>
-              <button className="reset-button" onClick={resetFilters} type="button">
-                重置
-              </button>
+              <button className="reset-button" onClick={resetFilters} type="button">重置</button>
             </div>
 
             <ChoiceGroup
-              choices={FACTIONS}
-              eyebrow="01"
-              groupCounts={counts.factions}
-              onChange={setSelectedFactions}
-              selected={selectedFactions}
-              title="势力"
+              choices={SERIES}
+              groupCounts={counts.series}
+              index="01"
+              onChange={setSelectedSeries}
+              selected={selectedSeries}
+              title="卡牌系列"
             />
             <ChoiceGroup
-              choices={PACKS}
-              eyebrow="02"
-              groupCounts={counts.packs}
-              onChange={setSelectedPacks}
-              selected={selectedPacks}
-              title="系列"
-            />
-            <ChoiceGroup
-              choices={RARITIES}
-              eyebrow="03"
-              groupCounts={counts.rarities}
-              onChange={setSelectedRarities}
-              selected={selectedRarities}
-              title="稀有度"
+              choices={YEARS}
+              groupCounts={counts.years}
+              index="02"
+              onChange={setSelectedYears}
+              selected={selectedYears}
+              title="发行年份"
             />
 
             <section className="draw-settings">
@@ -375,12 +314,14 @@ export default function Home() {
                 type="button"
               >
                 <i className={noRepeat ? "on" : ""}><b /></i>
-                <span>
-                  <b>本轮不重复</b>
-                  <small>抽完自动重新洗牌</small>
-                </span>
+                <span><b>本轮不重复</b><small>抽完自动重新洗牌</small></span>
               </button>
             </section>
+
+            <div className="source-note">
+              <b>关于牌池</b>
+              <p>当前使用 2008–2014 年实体身份局武将牌扫描图，不含国战专属牌。</p>
+            </div>
           </aside>
 
           <section className="draw-stage">
@@ -390,8 +331,8 @@ export default function Home() {
                 <h2>{drawn.length ? "本次抽取" : "牌已洗好"}</h2>
               </div>
               <div className="pool-counter">
-                <strong>{filteredHeroes.length}</strong>
-                <span>名武将<br />符合范围</span>
+                <strong>{filteredCards.length}</strong>
+                <span>张实体牌<br />符合范围</span>
               </div>
             </div>
 
@@ -399,27 +340,28 @@ export default function Home() {
               {isDrawing ? (
                 <div className="shuffle-state">
                   <div className="deck-animation">
-                    <i /><i /><i />
-                    <span>将</span>
+                    <i /><i />
+                    <img alt="武将牌背面" src={BACK_IMAGE} />
                   </div>
                   <p>正在洗牌…</p>
                 </div>
               ) : drawn.length ? (
                 <div className={`drawn-grid count-${drawn.length}`}>
-                  {drawn.map((hero) => (
-                    <HeroCard hero={hero} key={hero.id} onInspect={setInspected} />
+                  {drawn.map((card) => (
+                    <RealCard card={card} key={card.id} onOpen={setOpenedCard} />
                   ))}
                 </div>
               ) : (
                 <div className="empty-stage">
                   <div className="deck-stack" aria-hidden="true">
                     <i /><i />
-                    <div><span>将</span><b>武将台</b></div>
+                    <img alt="" src={BACK_IMAGE} />
                   </div>
                   <div>
-                    <p>已从官方武将录中筛出</p>
-                    <strong>{filteredHeroes.length}</strong>
-                    <span>名武将</span>
+                    <p>当前身份将池</p>
+                    <strong>{filteredCards.length}</strong>
+                    <span>张实体武将牌</span>
+                    <small>抽出后点击卡牌全屏查看</small>
                   </div>
                 </div>
               )}
@@ -428,24 +370,22 @@ export default function Home() {
             <div className="draw-actions">
               <button
                 className="draw-button"
-                disabled={filteredHeroes.length === 0 || isDrawing}
-                onClick={drawHeroes}
+                disabled={filteredCards.length === 0 || isDrawing}
+                onClick={drawCards}
                 type="button"
               >
-                <span>{filteredHeroes.length ? `抽取 ${drawCount} 名武将` : "当前范围没有武将"}</span>
+                <span>{filteredCards.length ? `抽取 ${drawCount} 张武将牌` : "当前范围没有武将牌"}</span>
                 <b>开牌</b>
               </button>
               <div className="draw-meta">
                 <span>
                   {noRepeat
-                    ? availableCount === 0 && filteredHeroes.length
+                    ? availableCount === 0 && filteredCards.length
                       ? "本轮已抽完，下次自动洗牌"
-                      : `本轮还可抽 ${availableCount} 名`
+                      : `本轮还可抽 ${availableCount} 张`
                     : "允许重复抽取"}
                 </span>
-                {history.length > 0 && (
-                  <button onClick={clearRound} type="button">清空本轮</button>
-                )}
+                {history.length > 0 && <button onClick={clearRound} type="button">清空本轮</button>}
               </div>
             </div>
 
@@ -453,13 +393,9 @@ export default function Home() {
               <div className="history-strip">
                 <span>最近抽到</span>
                 <div>
-                  {history.slice(0, 9).map((hero, index) => (
-                    <button
-                      key={`${hero.id}-${index}`}
-                      onClick={() => setInspected(hero)}
-                      type="button"
-                    >
-                      {hero.name}
+                  {history.slice(0, 10).map((card, index) => (
+                    <button key={`${card.id}-${index}`} onClick={() => setOpenedCard(card)} type="button">
+                      {card.name} <small>{card.year}</small>
                     </button>
                   ))}
                 </div>
@@ -471,84 +407,59 @@ export default function Home() {
         <section className="catalog-section" id="catalog">
           <div className="catalog-heading">
             <div>
-              <p>CATALOG / 武将名录</p>
-              <h2>{query ? `“${query}” 的搜索结果` : "浏览当前牌池"}</h2>
+              <p>CATALOG / 实体将面</p>
+              <h2>{query ? `“${query}” 的搜索结果` : "浏览当前身份将池"}</h2>
             </div>
-            <span>找到 {filteredHeroes.length} 名武将 · 点击卡片查看</span>
+            <span>找到 {filteredCards.length} 张 · 点击全屏查看原牌</span>
           </div>
 
-          {visibleHeroes.length ? (
+          {visibleCards.length ? (
             <div className="catalog-grid">
-              {visibleHeroes.map((hero) => (
-                <HeroCard
-                  compact
-                  hero={hero}
-                  key={hero.id}
-                  onInspect={setInspected}
-                />
+              {visibleCards.map((card) => (
+                <RealCard card={card} key={card.id} onOpen={setOpenedCard} size="catalog" />
               ))}
             </div>
           ) : (
             <div className="no-results">
               <span>无</span>
-              <h3>当前范围没有匹配武将</h3>
-              <p>试试减少筛选条件，或检查名字里的前缀。</p>
-              <button onClick={resetFilters} type="button">恢复完整牌池</button>
+              <h3>当前范围没有匹配的实体牌</h3>
+              <p>试试减少筛选条件，或检查武将姓名和编号。</p>
+              <button onClick={resetFilters} type="button">恢复完整身份将池</button>
             </div>
           )}
 
-          {filteredHeroes.length > VISIBLE_LIMIT && (
-            <button
-              className="show-more"
-              onClick={() => setShowAll((value) => !value)}
-              type="button"
-            >
-              {showAll ? "收起名录" : `展开全部 ${filteredHeroes.length} 名武将`}
+          {filteredCards.length > CATALOG_LIMIT && (
+            <button className="show-more" onClick={() => setShowAll((value) => !value)} type="button">
+              {showAll ? "收起名录" : `展开全部 ${filteredCards.length} 张`}
             </button>
           )}
         </section>
 
         <footer>
           <div className="footer-mark"><span>将</span> 武将台</div>
-          <p>数据整理自三国杀 OL 官网公开武将资料，立绘与角色版权归原权利方所有。</p>
-          <a href="https://www.sanguosha.com/hero" rel="noreferrer" target="_blank">
-            查看官方武将录 ↗
-          </a>
+          <p>实体卡面图源：桌游WIKI；《三国杀》角色、卡面与美术版权归原权利方所有。</p>
+          <a href="https://wiki.biligame.com/tg/三国杀" rel="noreferrer" target="_blank">查看图源页面 ↗</a>
         </footer>
       </div>
 
-      {inspected && (
-        <div
-          aria-modal="true"
-          className="modal-backdrop"
-          onMouseDown={(event) => {
-            if (event.currentTarget === event.target) setInspected(null);
-          }}
-          role="dialog"
-        >
-          <div className="hero-modal">
-            <button
-              aria-label="关闭"
-              className="modal-close"
-              onClick={() => setInspected(null)}
-              type="button"
-            >
-              ×
-            </button>
-            <HeroCard hero={inspected} />
-            <div className="modal-copy">
-              <span>{inspected.pack} · {inspected.rarity}</span>
-              <h2>{inspected.name}</h2>
-              <dl>
-                <div><dt>势力</dt><dd>{inspected.faction}</dd></div>
-                <div><dt>体力</dt><dd>{inspected.hp}</dd></div>
-                <div><dt>官方编号</dt><dd>#{inspected.id}</dd></div>
-              </dl>
-              <p>这张武将资料来自三国杀 OL 官网。技能、台词与背景故事可前往官方详情页查看。</p>
-              <a href={inspected.officialUrl} rel="noreferrer" target="_blank">
-                打开官方武将详情 ↗
-              </a>
+      {openedCard && (
+        <div aria-label={`${openedCard.name}完整武将牌`} aria-modal="true" className="card-viewer" role="dialog">
+          <div className="viewer-bar">
+            <div>
+              <b>{openedCard.name}</b>
+              <span>{openedCard.year} · {openedCard.series} · {openedCard.code}</span>
             </div>
+            <div>
+              <a href={openedCard.image} rel="noreferrer" target="_blank">查看原图 ↗</a>
+              <button aria-label="关闭全屏武将牌" onClick={() => setOpenedCard(null)} type="button">×</button>
+            </div>
+          </div>
+          <div className="viewer-canvas" onClick={() => setOpenedCard(null)}>
+            <img
+              alt={`${openedCard.name} ${openedCard.year}年完整武将牌原图`}
+              onClick={(event) => event.stopPropagation()}
+              src={openedCard.image}
+            />
           </div>
         </div>
       )}

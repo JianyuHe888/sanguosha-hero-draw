@@ -30,31 +30,30 @@ test("server-renders the finished hero draw app", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>武将台｜三国杀面杀选将器<\/title>/i);
-  assert.match(html, /定下牌池/);
-  assert.match(html, /抽将开战/);
-  assert.match(html, /681/);
-  assert.match(html, /og\.png/);
+  assert.match(html, /只收身份局/);
+  assert.match(html, /全屏查看原牌/);
+  assert.match(html, /166/);
+  assert.match(html, /og-v2\.png/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });
 
-test("ships a complete and normalized official hero catalog", async () => {
+test("ships a normalized physical identity-card catalog", async () => {
   const source = await readFile(
-    new URL("../app/data/heroes.json", import.meta.url),
+    new URL("../app/data/identity-cards.json", import.meta.url),
     "utf8",
   );
-  const heroes = JSON.parse(source);
+  const cards = JSON.parse(source);
 
-  assert.equal(heroes.length, 681);
-  assert.equal(new Set(heroes.map((hero) => hero.id)).size, 681);
-  assert.ok(heroes.every((hero) => hero.name && hero.faction && hero.pack));
-  assert.ok(heroes.every((hero) => /^https:\/\//.test(hero.image)));
+  assert.equal(cards.length, 166);
+  assert.equal(new Set(cards.map((card) => card.id)).size, 166);
+  assert.ok(cards.every((card) => card.name && card.year && card.code));
   assert.ok(
-    heroes.every((hero) =>
-      /^https:\/\/www\.sanguosha\.com\/hero\/\d+$/.test(hero.officialUrl),
+    cards.every((card) =>
+      /^https:\/\/patchwiki\.biligame\.com\/images\/tg\//.test(card.image),
     ),
   );
   assert.deepEqual(
-    [...new Set(heroes.map((hero) => hero.faction))].sort(),
-    ["吴", "晋", "神", "群", "蜀", "魏"].sort(),
+    [...new Set(cards.map((card) => card.year))].sort(),
+    ["2008", "2010", "2011", "2012", "2013", "2014"],
   );
 });
