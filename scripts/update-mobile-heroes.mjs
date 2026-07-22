@@ -1,4 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import faceToFaceConfig from "../app/data/face-to-face.json" with { type: "json" };
+import { getExistingImage } from "./mobile-data-cache.mjs";
+import { getPresetLevel } from "./mobile-pool-rules.mjs";
 
 const dataUrl = new URL("../app/data/heroes.json", import.meta.url);
 const cacheUrl = new URL("./.cache/", import.meta.url);
@@ -7,6 +10,15 @@ const wikiApiUrl = "https://wiki.biligame.com/msgs/api.php";
 const pageSize = 250;
 const refresh = process.argv.includes("--refresh");
 const unreleasedWithoutArtwork = new Set(["关羽兔", "赵云兔"]);
+
+const assistedModulesByHero = new Map();
+for (const [moduleId, module] of Object.entries(faceToFaceConfig.modules)) {
+  for (const heroName of module.heroNames) {
+    const current = assistedModulesByHero.get(heroName) ?? [];
+    current.push(moduleId);
+    assistedModulesByHero.set(heroName, current);
+  }
+}
 
 const sleep = (milliseconds) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -387,24 +399,6 @@ function normalizeFaction(value) {
   return value === "群（晋）" ? "晋" : value;
 }
 
-const earlyGods = new Set([
-  "神关羽",
-  "神吕蒙",
-  "神周瑜",
-  "神诸葛亮",
-  "神曹操",
-  "神吕布",
-  "神赵云",
-  "神司马懿",
-]);
-
-function isRecommended(hero) {
-  if (["标准", "神话再临", "一将成名", "界限突破"].includes(hero.pack)) {
-    return true;
-  }
-  return earlyGods.has(hero.name);
-}
-
 function skillFromRow(row) {
   const owner = firstText(row, "所属武将");
   const name = firstText(row, "技能名");
@@ -420,6 +414,7 @@ function skillFromRow(row) {
 }
 
 async function main() {
+  const oldHeroes = JSON.parse(await readFile(dataUrl, "utf8"));
   const officialRoster = await readOfficialRoster();
   const [wikiHeroRows, wikiSkillRows] = await Promise.all([
     askWikiAll(
@@ -459,7 +454,17 @@ async function main() {
   const unmatchedWikiHeroes = wikiHeroes.filter(
     (hero) => !officialRoster.has(normalizeName(hero.name)),
   );
-  const wikiImages = await readWikiImages(unmatchedWikiHeroes);
+  const cachedWikiImages = new Map(
+    unmatchedWikiHeroes
+      .map((hero) => [hero.wikiName, getExistingImage(hero.name, oldHeroes)])
+      .filter(([, image]) => image),
+  );
+  const wikiImages = new Map([
+    ...cachedWikiImages,
+    ...await readWikiImages(
+      unmatchedWikiHeroes.filter((hero) => !cachedWikiImages.has(hero.wikiName)),
+    ),
+  ]);
   const skillsByOwner = new Map();
 
   for (const row of wikiSkillRows) {
@@ -497,6 +502,8 @@ async function main() {
       continue;
     }
 
+    const assistantModules = assistedModulesByHero.get(wikiHero.name) ?? [];
+    const excludedReason = faceToFaceConfig.excluded[wikiHero.name];
     const hero = {
       id: official?.id ?? `wiki-${wikiHero.name}`,
       name: wikiHero.name,
@@ -508,10 +515,17 @@ async function main() {
       image: official?.image ?? fallbackImage,
       officialUrl: official?.officialUrl ?? "https://www.sanguosha.cn/index.php/pc/hero-list.html",
       wikiUrl: wikiHero.wikiUrl,
-      recommended: false,
+      presetLevel: 4,
+      faceToFace: excludedReason
+        ? "excluded"
+        : assistantModules.length
+          ? "assisted"
+          : "native",
+      assistantModules,
+      ...(excludedReason ? { excludedReason } : {}),
       skills,
     };
-    hero.recommended = isRecommended(hero);
+    hero.presetLevel = getPresetLevel(hero);
     heroes.push(hero);
   }
 
@@ -534,7 +548,6 @@ async function main() {
     );
   }
 
-  const oldHeroes = JSON.parse(await readFile(dataUrl, "utf8"));
   await writeFile(dataUrl, `${JSON.stringify(heroes)}\n`, "utf8");
 
   const groupCounts = (property) =>
@@ -549,7 +562,16 @@ async function main() {
       {
         before: oldHeroes.length,
         after: heroes.length,
-        recommended: heroes.filter((hero) => hero.recommended).length,
+        presets: Object.fromEntries(
+          [1, 2, 3, 4].map((level) => [
+            level,
+            heroes.filter(
+              (hero) => hero.presetLevel <= level && hero.faceToFace !== "excluded",
+            ).length,
+          ]),
+        ),
+        assisted: heroes.filter((hero) => hero.faceToFace === "assisted").length,
+        excluded: heroes.filter((hero) => hero.faceToFace === "excluded").length,
         factions: groupCounts("faction"),
         packs: groupCounts("pack"),
         rarities: groupCounts("rarity"),

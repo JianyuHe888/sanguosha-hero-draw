@@ -56,7 +56,11 @@ test("ships a complete and normalized mobile identity catalog", async () => {
     heroes.reduce((total, hero) => total + hero.skills.length, 0),
     1211,
   );
-  assert.equal(heroes.filter((hero) => hero.recommended).length, 219);
+  assert.equal(heroes.filter((hero) => hero.presetLevel <= 1).length, 149);
+  assert.equal(heroes.filter((hero) => hero.presetLevel <= 2).length, 293);
+  assert.equal(heroes.filter((hero) => hero.presetLevel <= 3).length, 400);
+  assert.equal(heroes.filter((hero) => hero.presetLevel <= 4).length, 573);
+  assert.equal(heroes.filter((hero) => hero.faceToFace === "assisted").length, 6);
   assert.equal(new Set(heroes.map((hero) => hero.id)).size, heroes.length);
   assert.ok(heroes.every((hero) => hero.name && hero.faction && hero.pack && hero.sourcePack));
   assert.ok(heroes.every((hero) => /^https:\/\//.test(hero.image)));
@@ -86,7 +90,12 @@ test("ships a complete and normalized mobile identity catalog", async () => {
       /^https:\/\/wiki\.biligame\.com\/msgs\//.test(hero.wikiUrl),
     ),
   );
-  assert.ok(heroes.every((hero) => typeof hero.recommended === "boolean"));
+  assert.ok(heroes.every((hero) => !Object.hasOwn(hero, "recommended")));
+  assert.ok(heroes.every((hero) => [1, 2, 3, 4].includes(hero.presetLevel)));
+  assert.ok(
+    heroes.every((hero) => ["native", "assisted", "excluded"].includes(hero.faceToFace)),
+  );
+  assert.ok(heroes.every((hero) => Array.isArray(hero.assistantModules)));
   assert.ok(heroes.every((hero) => ["魏", "蜀", "吴", "群", "晋", "神", "魔"].includes(hero.faction)));
   assert.ok(heroes.every((hero) => Number.isInteger(hero.hp) && hero.hp >= 1 && hero.hp <= 15));
   assert.ok(

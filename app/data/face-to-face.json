@@ -1,0 +1,11 @@
+{
+  "modules": {
+    "huashen": { "title": "化身助手", "heroNames": ["左慈", "界左慈"] },
+    "zhengjing": { "title": "整经助手", "heroNames": ["郑玄"] },
+    "baixi": { "title": "水转百戏", "heroNames": ["马钧"] },
+    "jingxie": { "title": "精械对照", "heroNames": ["马钧"] },
+    "mingyunqian": { "title": "命运签", "heroNames": ["周群"] },
+    "jiedang": { "title": "结党助手", "heroNames": ["十常侍"] }
+  },
+  "excluded": {}
+}
