@@ -301,6 +301,46 @@ git commit -m "Generate face-to-face hero compatibility"
 
 ---
 
+## Task 2A: Classify granted skills and make them click-only
+
+**Files:**
+
+- Create: `scripts/granted-skill-rules.mjs`
+- Create: `tests/granted-skill-rules.test.mjs`
+- Modify: `scripts/update-mobile-heroes.mjs`
+- Modify: `app/data/heroes.json` (generated)
+- Modify: `package.json`
+
+- [ ] Add failing tests for acquisition-clause parsing and graph classification. Use real cleaned/raw examples for 孙策、SP孙尚香 and 神司马懿. Assert 孙策 base skills are `激昂/魂姿/制霸`, 魂姿 grants `英姿/英魂`, SP孙尚香's `良助` remains base while `枭姬` is granted, and 神司马懿 produces `拜印 → 极略 → 鬼才/放逐/集智/制衡/完杀` without a cycle.
+
+- [ ] Implement `scripts/granted-skill-rules.mjs` with `extractGrantReferences(rawDescription)`, `classifyHeroSkills(ownedSkills, allSkillRows)`, and `validateSkillGraph(skills)`. Only inspect the substring after an acquisition trigger inside the same sentence/clause, prefer the raw WIKI `data-name="技能页@"` target, and fall back to quoted names intersecting the global skill index. Never treat `失去技能` or a condition such as `若你拥有技能` as acquisition.
+
+- [ ] Generate each skill as:
+
+```ts
+{
+  id: string;
+  name: string;
+  description: string;
+  kind: "base" | "granted";
+  grants: string[];
+  grantedBy: string[];
+}
+```
+
+Append globally resolved grant-only skills to the owning hero's `skills` array, recursively resolve their own grants, and validate ids/edges before writing JSON.
+
+- [ ] Regenerate from cache and assert current representative graphs plus `heroes.every(hero => hero.skills.some(skill => skill.kind === "base"))`.
+
+- [ ] Commit the data classification before UI work.
+
+```powershell
+git add scripts/granted-skill-rules.mjs scripts/update-mobile-heroes.mjs tests/granted-skill-rules.test.mjs package.json app/data/heroes.json
+git commit -m "Classify acquired mobile skills"
+```
+
+---
+
 ## Task 3: Separate hero types and pure pool filtering
 
 **Files:**
@@ -316,8 +356,12 @@ export type PresetLevel = 1 | 2 | 3 | 4;
 export type FaceToFaceStatus = "native" | "assisted" | "excluded";
 
 export type HeroSkill = {
+  id: string;
   name: string;
   description: string;
+  kind: "base" | "granted";
+  grants: string[];
+  grantedBy: string[];
 };
 
 export type Hero = {
@@ -953,6 +997,7 @@ git commit -m "Add fortune and Jiedang helpers"
 
 - Create: `app/components/HeroCard.tsx`
 - Create: `app/components/HeroDetail.tsx`
+- Create: `app/components/SkillText.tsx`
 - Modify: `app/page.tsx`
 - Modify: `app/globals.css`
 - Modify: `tests/rendered-html.test.mjs`
@@ -980,6 +1025,8 @@ type HeroDetailProps = {
 - `不可面杀` and disabled draw styling when excluded;
 - `经典身份`, `界限平衡`, `进阶平衡`, or `完整将池` based on the hero's minimum `presetLevel`.
 
+- [ ] In `HeroDetail`, render only `hero.skills.filter(skill => skill.kind === "base")` in the main skill list. `SkillText` replaces each referenced grant name with a button carrying `aria-expanded`; clicking it opens one inline panel labelled `附加技能` and renders the referenced description. Nested `grants` reuse `SkillText` with a visited-id set, so 神司马懿 can be explored recursively without cycles. Do not add a separate always-visible附加技能 list.
+
 - [ ] Add regression assertions to `tests/rendered-html.test.mjs`:
 
 ```js
@@ -991,6 +1038,19 @@ assert.equal(heroes.filter((hero) => hero.faceToFace === "assisted").length, 6);
 assert.ok(heroes.every((hero) => !Object.hasOwn(hero, "recommended")));
 assert.ok(heroes.every((hero) => Number.isInteger(hero.presetLevel)));
 assert.ok(heroes.every((hero) => Array.isArray(hero.assistantModules)));
+assert.ok(heroes.every((hero) => hero.skills.every((skill) => ["base", "granted"].includes(skill.kind))));
+
+const sunce = heroes.find((hero) => hero.name === "孙策");
+assert.deepEqual(
+  sunce.skills.filter((skill) => skill.kind === "base").map((skill) => skill.name),
+  ["激昂", "魂姿", "制霸"],
+);
+assert.deepEqual(
+  sunce.skills.find((skill) => skill.name === "魂姿").grants.map(
+    (id) => sunce.skills.find((skill) => skill.id === id).name,
+  ),
+  ["英姿", "英魂"],
+);
 ```
 
 Keep all current skill-cleaning regression assertions, especially 界夏侯惇's current `清俭` wording.
