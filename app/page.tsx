@@ -6,6 +6,7 @@ import { HeroDetail } from "./components/HeroDetail";
 import { PoolSelector } from "./components/PoolSelector";
 import { SkillAssistant } from "./components/SkillAssistant";
 import heroData from "./data/heroes.json";
+import { cryptoIndex } from "./lib/assistant-rules.mjs";
 import { filterCatalog, filterDrawPool } from "./lib/pool-filter.mjs";
 import type { Hero, PresetLevel } from "./lib/hero-types";
 
@@ -84,9 +85,7 @@ function toggleChoice(current: string[], value: string, universe: string[]) {
 function randomize<T>(items: T[]) {
   const shuffled = [...items];
   for (let index = shuffled.length - 1; index > 0; index -= 1) {
-    const sample = new Uint32Array(1);
-    window.crypto.getRandomValues(sample);
-    const target = sample[0] % (index + 1);
+    const target = cryptoIndex(index + 1);
     [shuffled[index], shuffled[target]] = [shuffled[target], shuffled[index]];
   }
   return shuffled;

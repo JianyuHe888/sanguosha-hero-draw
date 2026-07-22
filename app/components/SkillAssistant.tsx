@@ -33,6 +33,7 @@ export function SkillAssistant({
   const [activeId, setActiveId] = useState(initialModuleId ?? hero.assistantModules[0]);
   const [state, setState] = useState<unknown>(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [resetNonce, setResetNonce] = useState(0);
   const closeRef = useRef<HTMLButtonElement>(null);
   const entry = REGISTRY[activeId as keyof typeof REGISTRY];
   const storageKey = getAssistantStorageKey(activeId, hero.id);
@@ -65,6 +66,7 @@ export function SkillAssistant({
     clearAssistantState(window.localStorage, storageKey);
     setState(null);
     setConfirmReset(false);
+    setResetNonce((value) => value + 1);
   };
   const Panel = entry?.component;
 
@@ -90,7 +92,7 @@ export function SkillAssistant({
           </nav>
         )}
         <div className="assistant-panel">
-          {Panel ? <Panel hero={hero} heroes={heroes} onChange={update} state={state} /> : <div className="assistant-missing"><h3>辅助规则缺失，该武将本局不可抽取</h3><p>请暂时从将池中移除此武将。</p></div>}
+          {Panel ? <Panel hero={hero} heroes={heroes} key={`${activeId}-${resetNonce}`} onChange={update} state={state} /> : <div className="assistant-missing"><h3>辅助规则缺失，该武将本局不可抽取</h3><p>请暂时从将池中移除此武将。</p></div>}
         </div>
       </section>
     </div>
