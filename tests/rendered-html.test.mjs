@@ -32,13 +32,20 @@ test("server-renders the finished hero draw app", async () => {
   const heroes = JSON.parse(
     await readFile(new URL("../app/data/heroes.json", import.meta.url), "utf8"),
   );
-  const recommendedCount = heroes.filter((hero) => hero.recommended).length;
+  const presetCounts = [1, 2, 3, 4].map(
+    (level) => heroes.filter(
+      (hero) => hero.presetLevel <= level && hero.faceToFace !== "excluded",
+    ).length,
+  );
   assert.match(html, /<title>面杀助手｜三国杀面杀选将器<\/title>/i);
   assert.match(html, /定下牌池/);
   assert.match(html, /抽将开战/);
   assert.match(html, new RegExp(String(heroes.length)));
-  assert.match(html, /推荐将池/);
-  assert.match(html, new RegExp(String(recommendedCount)));
+  for (const label of ["经典身份", "界限平衡", "进阶平衡", "完整将池"]) {
+    assert.match(html, new RegExp(label));
+  }
+  for (const count of presetCounts) assert.match(html, new RegExp(String(count)));
+  assert.doesNotMatch(html, /推荐将池/);
   assert.match(html, /三国杀移动版身份局/);
   assert.match(html, /og\.png/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
@@ -54,7 +61,7 @@ test("ships a complete and normalized mobile identity catalog", async () => {
   assert.equal(heroes.length, 573);
   assert.equal(
     heroes.reduce((total, hero) => total + hero.skills.length, 0),
-    1211,
+    1219,
   );
   assert.equal(heroes.filter((hero) => hero.presetLevel <= 1).length, 149);
   assert.equal(heroes.filter((hero) => hero.presetLevel <= 2).length, 293);

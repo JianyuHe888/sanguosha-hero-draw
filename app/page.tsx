@@ -1,27 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { PoolSelector } from "./components/PoolSelector";
 import heroData from "./data/heroes.json";
-
-type Hero = {
-  id: string;
-  name: string;
-  faction: string;
-  hp: number;
-  maxHp?: number;
-  armor?: number;
-  rarity: string;
-  pack: string;
-  sourcePack: string;
-  image: string;
-  officialUrl: string;
-  wikiUrl: string;
-  recommended: boolean;
-  skills: Array<{
-    name: string;
-    description: string;
-  }>;
-};
+import { filterCatalog, filterDrawPool } from "./lib/pool-filter.mjs";
+import type { Hero, PresetLevel } from "./lib/hero-types";
 
 const heroes = heroData as Hero[];
 const orderedValues = (values: string[], preferred: string[]) => {
@@ -68,10 +51,6 @@ const RARITIES = orderedValues(
 );
 const VISIBLE_LIMIT = 18;
 
-const recommendedHeroIds = new Set(
-  heroes.filter((hero) => hero.recommended).map((hero) => hero.id),
-);
-
 const counts = {
   factions: Object.fromEntries(
     FACTIONS.map((value) => [
@@ -92,10 +71,6 @@ const counts = {
     ]),
   ),
 };
-
-function normalize(value: string) {
-  return value.toLocaleLowerCase("zh-CN").replace(/[·\s]/g, "");
-}
 
 function toggleChoice(current: string[], value: string, universe: string[]) {
   if (current.length === universe.length) return [value];
@@ -242,21 +217,33 @@ export default function Home() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [inspected, setInspected] = useState<Hero | null>(null);
-  const [recommendedOnly, setRecommendedOnly] = useState(false);
+  const [presetLevel, setPresetLevel] = useState<PresetLevel>(2);
 
-  const filteredHeroes = useMemo(() => {
-    const needle = normalize(query);
-    return heroes.filter(
-      (hero) =>
-        selectedFactions.includes(hero.faction) &&
-        selectedPacks.includes(hero.pack) &&
-        selectedRarities.includes(hero.rarity) &&
-        (!recommendedOnly || recommendedHeroIds.has(hero.id)) &&
-        (!needle ||
-          normalize(hero.name).includes(needle) ||
-          normalize(hero.pack).includes(needle)),
-    );
-  }, [query, recommendedOnly, selectedFactions, selectedPacks, selectedRarities]);
+  const filterInput = useMemo(() => ({
+    factions: selectedFactions,
+    packs: selectedPacks,
+    rarities: selectedRarities,
+    presetLevel,
+    query,
+  }), [presetLevel, query, selectedFactions, selectedPacks, selectedRarities]);
+
+  const filteredHeroes = useMemo(
+    () => filterDrawPool(heroes, filterInput) as Hero[],
+    [filterInput],
+  );
+  const catalogHeroes = useMemo(
+    () => filterCatalog(heroes, filterInput) as Hero[],
+    [filterInput],
+  );
+
+  const presetCounts = useMemo(() => Object.fromEntries(
+    ([1, 2, 3, 4] as PresetLevel[]).map((level) => [
+      level,
+      heroes.filter(
+        (hero) => hero.presetLevel <= level && hero.faceToFace !== "excluded",
+      ).length,
+    ]),
+  ) as Record<PresetLevel, number>, []);
 
   const availableCount = noRepeat
     ? filteredHeroes.filter((hero) => !usedIds.has(hero.id)).length
@@ -275,33 +262,27 @@ export default function Home() {
     };
   }, [inspected]);
 
+  const clearRound = () => {
+    setDrawn([]);
+    setHistory([]);
+    setUsedIds(new Set());
+  };
+
   const resetFilters = () => {
     setQuery("");
     setSelectedFactions([...FACTIONS]);
     setSelectedPacks([...PACKS]);
     setSelectedRarities([...RARITIES]);
-    setRecommendedOnly(false);
+    setPresetLevel(2);
+    setShowAll(false);
+    clearRound();
   };
 
-  const toggleRecommendedPool = () => {
-    if (recommendedOnly) {
-      setRecommendedOnly(false);
-      setSelectedFactions([...FACTIONS]);
-      setSelectedPacks([...PACKS]);
-      setSelectedRarities([...RARITIES]);
-      return;
-    }
-
-    setRecommendedOnly(true);
-    setSelectedFactions([...FACTIONS]);
-    setSelectedPacks([...PACKS]);
-    setSelectedRarities([...RARITIES]);
-  };
-
-  const clearRound = () => {
-    setDrawn([]);
-    setHistory([]);
-    setUsedIds(new Set());
+  const selectPreset = (level: PresetLevel) => {
+    if (level === presetLevel) return;
+    setPresetLevel(level);
+    setShowAll(false);
+    clearRound();
   };
 
   const drawHeroes = () => {
@@ -334,8 +315,8 @@ export default function Home() {
   };
 
   const visibleHeroes = showAll
-    ? filteredHeroes
-    : filteredHeroes.slice(0, VISIBLE_LIMIT);
+    ? catalogHeroes
+    : catalogHeroes.slice(0, VISIBLE_LIMIT);
 
   return (
     <main>
@@ -388,19 +369,13 @@ export default function Home() {
                 <h2>圈定牌池</h2>
               </div>
               <div className="panel-actions">
-                <button
-                  aria-pressed={recommendedOnly}
-                  className={recommendedOnly ? "preset-button active" : "preset-button"}
-                  onClick={toggleRecommendedPool}
-                  type="button"
-                >
-                  推荐将池 <b>{recommendedHeroIds.size}</b>
-                </button>
                 <button className="reset-button" onClick={resetFilters} type="button">
                   重置
                 </button>
               </div>
             </div>
+
+            <PoolSelector counts={presetCounts} onChange={selectPreset} value={presetLevel} />
 
             <ChoiceGroup
               choices={FACTIONS}
@@ -550,7 +525,7 @@ export default function Home() {
               <p>CATALOG / 武将名录</p>
               <h2>{query ? `“${query}” 的搜索结果` : "浏览当前牌池"}</h2>
             </div>
-            <span>找到 {filteredHeroes.length} 名武将 · 点击卡片查看完整技能</span>
+            <span>找到 {catalogHeroes.length} 名武将 · 点击卡片查看完整技能</span>
           </div>
 
           {visibleHeroes.length ? (
@@ -573,13 +548,13 @@ export default function Home() {
             </div>
           )}
 
-          {filteredHeroes.length > VISIBLE_LIMIT && (
+          {catalogHeroes.length > VISIBLE_LIMIT && (
             <button
               className="show-more"
               onClick={() => setShowAll((value) => !value)}
               type="button"
             >
-              {showAll ? "收起名录" : `展开全部 ${filteredHeroes.length} 名武将`}
+              {showAll ? "收起名录" : `展开全部 ${catalogHeroes.length} 名武将`}
             </button>
           )}
         </section>
