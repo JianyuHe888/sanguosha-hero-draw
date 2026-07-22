@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import faceToFaceConfig from "../app/data/face-to-face.json" with { type: "json" };
+import { classifyHeroSkills } from "./granted-skill-rules.mjs";
 import { getExistingImage } from "./mobile-data-cache.mjs";
 import { getPresetLevel } from "./mobile-pool-rules.mjs";
 
@@ -402,12 +403,15 @@ function normalizeFaction(value) {
 function skillFromRow(row) {
   const owner = firstText(row, "所属武将");
   const name = firstText(row, "技能名");
-  const description = cleanText(printout(row, "经典技能描述")[0] ?? "", {
+  const rawDescription = printout(row, "经典技能描述")[0] ?? "";
+  const description = cleanText(rawDescription, {
     multiline: true,
   });
   return {
+    id: cleanText(row.fulltext) || `${name}/${owner}`,
     owner,
     name,
+    rawDescription: String(rawDescription),
     description: correctSkillText(owner, name, selectIdentitySection(description)),
     order: Number.parseInt(firstText(row, "技能序号"), 10) || 999,
   };
@@ -451,6 +455,7 @@ async function main() {
         !hero.rawPacks.some((pack) => pack.includes("武将试炼专属")),
     );
   const identityNames = new Set(wikiHeroes.map((hero) => hero.wikiName));
+  const allSkills = wikiSkillRows.map((row) => skillFromRow(row));
   const unmatchedWikiHeroes = wikiHeroes.filter(
     (hero) => !officialRoster.has(normalizeName(hero.name)),
   );
@@ -467,8 +472,7 @@ async function main() {
   ]);
   const skillsByOwner = new Map();
 
-  for (const row of wikiSkillRows) {
-    const skill = skillFromRow(row);
+  for (const skill of allSkills) {
     if (!identityNames.has(skill.owner) || !skill.name || !skill.description) continue;
     const current = skillsByOwner.get(skill.owner) ?? [];
     current.push(skill);
@@ -482,7 +486,7 @@ async function main() {
 
   for (const wikiHero of wikiHeroes) {
     const official = officialRoster.get(normalizeName(wikiHero.name));
-    const skills = (skillsByOwner.get(wikiHero.wikiName) ?? [])
+    const ownedSkills = (skillsByOwner.get(wikiHero.wikiName) ?? [])
       .sort((left, right) => left.order - right.order || left.name.localeCompare(right.name, "zh-CN"))
       .filter(
         (skill, index, list) =>
@@ -490,8 +494,8 @@ async function main() {
             (candidate) =>
               candidate.name === skill.name && candidate.description === skill.description,
           ) === index,
-      )
-      .map(({ name, description }) => ({ name, description }));
+      );
+    const skills = classifyHeroSkills(ownedSkills, allSkills);
     const vitality = parseVitality(wikiHero.hpText);
 
     const fallbackImage = wikiImages.get(wikiHero.wikiName) ?? "";
