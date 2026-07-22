@@ -103,6 +103,15 @@ test("ships a complete and normalized mobile identity catalog", async () => {
     heroes.every((hero) => ["native", "assisted", "excluded"].includes(hero.faceToFace)),
   );
   assert.ok(heroes.every((hero) => Array.isArray(hero.assistantModules)));
+  assert.ok(
+    heroes.every((hero) =>
+      hero.skills.every(
+        (skill) => ["base", "granted"].includes(skill.kind)
+          && Array.isArray(skill.grants)
+          && Array.isArray(skill.grantedBy),
+      ),
+    ),
+  );
   assert.ok(heroes.every((hero) => ["魏", "蜀", "吴", "群", "晋", "神", "魔"].includes(hero.faction)));
   assert.ok(heroes.every((hero) => Number.isInteger(hero.hp) && hero.hp >= 1 && hero.hp <= 15));
   assert.ok(
@@ -115,6 +124,27 @@ test("ships a complete and normalized mobile identity catalog", async () => {
     heroes.every((hero) =>
       hero.skills.every((skill) => !/【(?:身份|军争|团战|斗地主)/.test(skill.description)),
     ),
+  );
+
+  const sunce = heroes.find((hero) => hero.name === "孙策");
+  assert.deepEqual(
+    sunce.skills.filter((skill) => skill.kind === "base").map((skill) => skill.name),
+    ["激昂", "魂姿", "制霸"],
+  );
+  assert.deepEqual(
+    sunce.skills.find((skill) => skill.name === "魂姿").grants.map(
+      (id) => sunce.skills.find((skill) => skill.id === id).name,
+    ),
+    ["英姿", "英魂"],
+  );
+
+  const shensimayi = heroes.find((hero) => hero.name === "神司马懿");
+  const baiyin = shensimayi.skills.find((skill) => skill.name === "拜印");
+  const jilue = shensimayi.skills.find((skill) => skill.name === "极略");
+  assert.deepEqual(baiyin.grants, [jilue.id]);
+  assert.deepEqual(
+    jilue.grants.map((id) => shensimayi.skills.find((skill) => skill.id === id).name),
+    ["鬼才", "放逐", "集智", "制衡", "完杀"],
   );
 
   const shensunce = heroes.find((hero) => hero.name === "神孙策");

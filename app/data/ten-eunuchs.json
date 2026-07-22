@@ -1,0 +1,12 @@
+[
+  { "id": "zhangrang", "name": "张让", "skill": "滔乱", "summary": "将一张牌当任意一张牌使用。" },
+  { "id": "zhaozhong", "name": "赵忠", "skill": "鸱咽", "summary": "使用【杀】时扣置目标的牌，并可在牌数占优时增伤。" },
+  { "id": "sunzhang", "name": "孙璋", "skill": "自谋", "summary": "使用本回合第2、4、6张牌时获得额外牌。" },
+  { "id": "bilan", "name": "毕岚", "skill": "庀材", "summary": "连续判定不同花色并可将判定牌交给一名角色。" },
+  { "id": "xiayun", "name": "夏恽", "skill": "谣诼", "summary": "与一名角色拼点，赢则令其跳过摸牌阶段。" },
+  { "id": "hankui", "name": "韩悝", "skill": "宵赂", "summary": "摸两张牌，再交给其他角色两张牌或弃置两张牌。" },
+  { "id": "lisong", "name": "栗嵩", "skill": "窥机", "summary": "观看一名角色手牌，并与其合计弃置四张不同花色的牌。" },
+  { "id": "duangui", "name": "段珪", "skill": "叱吓", "summary": "使用【杀】时翻牌，按同花色结果增伤并限制响应。" },
+  { "id": "guosheng", "name": "郭胜", "skill": "逆取", "summary": "对一名角色造成火焰伤害。" },
+  { "id": "gaowang", "name": "高望", "skill": "妙语", "summary": "以指定花色牌转化使用牌，多牌转化时获得额外效果。" }
+]

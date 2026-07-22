@@ -1,0 +1,7 @@
+[
+  { "id": "best", "name": "上上签", "tone": "blessing", "effect": "防止其受到的伤害。" },
+  { "id": "good", "name": "上签", "tone": "blessing", "effect": "其受到大于1点的伤害时将伤害值改为1；其受到1点伤害后摸一张牌。" },
+  { "id": "middle", "name": "中签", "tone": "neutral", "effect": "其受到伤害时，将伤害改为火焰伤害；若伤害值大于1，将伤害值改为1。" },
+  { "id": "bad", "name": "下签", "tone": "curse", "effect": "其受到的伤害值+1。" },
+  { "id": "worst", "name": "下下签", "tone": "curse", "effect": "其受到的伤害值+1；其不能使用【桃】和【酒】。" }
+]

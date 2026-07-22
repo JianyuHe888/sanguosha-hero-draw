@@ -102,7 +102,12 @@ export function classifyHeroSkills(ownedSkills, allSkillRows) {
   }
 
   validateSkillGraph(result);
-  return result.map(({ rawDescription: _rawDescription, order: _order, ...skill }) => skill);
+  return result.map((skill) => {
+    const cleaned = { ...skill };
+    delete cleaned.rawDescription;
+    delete cleaned.order;
+    return cleaned;
+  });
 }
 
 export function validateSkillGraph(skills) {

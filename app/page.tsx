@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { HeroCard } from "./components/HeroCard";
+import { HeroDetail } from "./components/HeroDetail";
 import { PoolSelector } from "./components/PoolSelector";
+import { SkillAssistant } from "./components/SkillAssistant";
 import heroData from "./data/heroes.json";
 import { filterCatalog, filterDrawPool } from "./lib/pool-filter.mjs";
 import type { Hero, PresetLevel } from "./lib/hero-types";
@@ -143,67 +146,6 @@ function ChoiceGroup({
   );
 }
 
-function HeroCard({
-  hero,
-  compact = false,
-  onInspect,
-}: {
-  hero: Hero;
-  compact?: boolean;
-  onInspect?: (hero: Hero) => void;
-}) {
-  return (
-    <article
-      className={compact ? "hero-card compact" : "hero-card"}
-      data-faction={hero.faction}
-    >
-      <div className="card-grain" />
-      <div className="card-topline">
-        <span className="faction-seal">{hero.faction}</span>
-        <span className="rarity">{hero.rarity}</span>
-      </div>
-      <img
-        alt={`${hero.name}移动版武将形象`}
-        className="hero-art"
-        loading={compact ? "lazy" : "eager"}
-        onError={(event) => {
-          event.currentTarget.style.display = "none";
-        }}
-        src={hero.image}
-      />
-      <div className="silhouette" aria-hidden="true">
-        将
-      </div>
-      <div className="ink-wash" />
-      <div className="hero-caption">
-        <div>
-          <p>{hero.pack}</p>
-          <h3>{hero.name}</h3>
-        </div>
-        <div
-          className="hp"
-          aria-label={`${hero.hp}${hero.maxHp ? `/${hero.maxHp}` : ""}点体力${hero.armor ? `，${hero.armor}点护甲` : ""}`}
-        >
-          {Array.from({ length: Math.min(hero.hp, 6) }, (_, index) => (
-            <i key={index}>◆</i>
-          ))}
-          {hero.hp > 6 && <b>+{hero.hp - 6}</b>}
-          {hero.maxHp && <b>/{hero.maxHp}</b>}
-          {hero.armor && <b>盾{hero.armor}</b>}
-        </div>
-      </div>
-      {onInspect && (
-        <button
-          aria-label={`查看${hero.name}`}
-          className="card-hitarea"
-          onClick={() => onInspect(hero)}
-          type="button"
-        />
-      )}
-    </article>
-  );
-}
-
 export default function Home() {
   const [query, setQuery] = useState("");
   const [selectedFactions, setSelectedFactions] = useState([...FACTIONS]);
@@ -217,6 +159,7 @@ export default function Home() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [inspected, setInspected] = useState<Hero | null>(null);
+  const [assistantHero, setAssistantHero] = useState<Hero | null>(null);
   const [presetLevel, setPresetLevel] = useState<PresetLevel>(2);
 
   const filterInput = useMemo(() => ({
@@ -252,7 +195,7 @@ export default function Home() {
   useEffect(() => {
     if (!inspected) return;
     const close = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setInspected(null);
+      if (event.key === "Escape" && !assistantHero) setInspected(null);
     };
     window.addEventListener("keydown", close);
     document.body.classList.add("modal-open");
@@ -260,7 +203,7 @@ export default function Home() {
       window.removeEventListener("keydown", close);
       document.body.classList.remove("modal-open");
     };
-  }, [inspected]);
+  }, [assistantHero, inspected]);
 
   const clearRound = () => {
     setDrawn([]);
@@ -341,7 +284,7 @@ export default function Home() {
             <p className="kicker"><span>面杀利器</span> 公平 · 快速 · 不重复</p>
             <h1>定下牌池，<em>抽将开战。</em></h1>
             <p className="intro-note">
-              以三国杀移动版身份局为基准，按势力、系列与品质圈定范围。输入姓名快速搜索，点击武将即可查看势力、体力和现行技能。
+              以三国杀移动版身份局为基准，四档将池按出版阶段逐步扩展，并非逐将胜率排行。输入姓名可全局搜索，需线上操作的技能由内置面杀模块辅助。
             </p>
           </div>
           <label className="search-box">
@@ -533,6 +476,7 @@ export default function Home() {
               {visibleHeroes.map((hero) => (
                 <HeroCard
                   compact
+                  disabled={hero.faceToFace === "excluded"}
                   hero={hero}
                   key={hero.id}
                   onInspect={setInspected}
@@ -561,7 +505,7 @@ export default function Home() {
 
         <footer>
           <div className="footer-mark"><span>将</span> 面杀助手</div>
-          <p>身份局名录以三国杀移动版为准，现行技能参考移动版官方改版公告与移动版 WIKI。</p>
+          <p>身份局名录与现行技能以三国杀移动版为准；将池强度按出版阶段划分，标有“需辅助”的武将请使用内置面杀模块。</p>
           <a href="https://www.sanguosha.cn/index.php/pc/hero-list.html" rel="noreferrer" target="_blank">
             查看移动版武将录 ↗
           </a>
@@ -569,67 +513,23 @@ export default function Home() {
       </div>
 
       {inspected && (
-        <div
-          aria-labelledby="hero-detail-title"
-          aria-modal="true"
-          className="modal-backdrop"
-          onMouseDown={(event) => {
-            if (event.currentTarget === event.target) setInspected(null);
+        <HeroDetail
+          hero={inspected}
+          onClose={() => setInspected(null)}
+          onOpenAssistant={setAssistantHero}
+        />
+      )}
+      {assistantHero && (
+        <SkillAssistant
+          hero={assistantHero}
+          heroes={heroes}
+          onClose={() => {
+            setAssistantHero(null);
+            window.requestAnimationFrame(() => {
+              document.querySelector<HTMLButtonElement>(".assistant-open-button")?.focus();
+            });
           }}
-          role="dialog"
-        >
-          <div className="hero-modal">
-            <button
-              aria-label="关闭"
-              className="modal-close"
-              onClick={() => setInspected(null)}
-              type="button"
-            >
-              ×
-            </button>
-            <HeroCard hero={inspected} />
-            <div className="modal-copy">
-              <span>CHARACTER CARD / 武将信息卡</span>
-              <div className="modal-name-row">
-                <div>
-                  <small>{inspected.sourcePack} · {inspected.rarity}</small>
-                  <h2 id="hero-detail-title">{inspected.name}</h2>
-                </div>
-                <b className={`modal-faction faction-${inspected.faction}`}>
-                  {inspected.faction}
-                </b>
-              </div>
-              <dl>
-                <div><dt>势力</dt><dd>{inspected.faction}</dd></div>
-                <div>
-                  <dt>体力</dt>
-                  <dd>
-                    {inspected.hp}{inspected.maxHp ? ` / ${inspected.maxHp}` : ""} 点
-                    {inspected.armor ? ` · 护甲 ${inspected.armor}` : ""}
-                  </dd>
-                </div>
-                <div><dt>系列</dt><dd>{inspected.pack}</dd></div>
-              </dl>
-              <section className="modal-skills" aria-label="武将技能">
-                <div className="modal-section-title">
-                  <span>SKILLS</span>
-                  <h3>武将技能</h3>
-                </div>
-                <div className="skill-list">
-                  {inspected.skills.map((skill, index) => (
-                    <article className="skill-item" key={`${skill.name}-${index}`}>
-                      <h4>{skill.name}</h4>
-                      <p>{skill.description}</p>
-                    </article>
-                  ))}
-                </div>
-              </section>
-              <a href={inspected.wikiUrl} rel="noreferrer" target="_blank">
-                核对移动版现行技能 ↗
-              </a>
-            </div>
-          </div>
-        </div>
+        />
       )}
     </main>
   );
