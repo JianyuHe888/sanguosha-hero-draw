@@ -187,6 +187,7 @@ button { color: inherit; }
 .hero-card[data-faction="群"] { --faction: #827765; --faction-dark: #3f382e; }
 .hero-card[data-faction="晋"] { --faction: #705b83; --faction-dark: #362541; }
 .hero-card[data-faction="神"] { --faction: #b89242; --faction-dark: #4e3710; }
+.hero-card[data-faction="魔"] { --faction: #6f2730; --faction-dark: #241015; }
 .card-grain { position: absolute; inset: 0; z-index: 0; background: radial-gradient(circle at 50% 70%, var(--faction), var(--faction-dark) 72%), repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0 1px, transparent 1px 4px); }
 .hero-art { position: absolute; z-index: 2; width: 112%; height: 91%; left: -6%; bottom: 6%; object-fit: contain; object-position: center bottom; filter: drop-shadow(0 8px 9px rgba(0,0,0,.4)); }
 .silhouette { position: absolute; inset: 22% 0 auto; z-index: 1; color: rgba(255,244,220,.09); font-size: clamp(80px, 12vw, 150px); font-weight: 900; text-align: center; }
@@ -276,6 +277,7 @@ body.modal-open { overflow: hidden; }
 .modal-copy dt { color: #8a7f71; font-family: system-ui, sans-serif; font-size: 9px; }
 .modal-copy dd { margin: 6px 0 0; font-size: 16px; }
 .modal-skills { margin: 23px 0 20px; }
+.skill-item p { white-space: pre-line; }
 .modal-section-title { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
 .modal-section-title span { color: var(--cinnabar); font-family: system-ui, sans-serif; font-size: 9px; letter-spacing: .16em; }
 .modal-section-title h3 { margin: 0; font-size: 18px; }

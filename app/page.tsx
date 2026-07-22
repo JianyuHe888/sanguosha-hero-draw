@@ -8,10 +8,15 @@ type Hero = {
   name: string;
   faction: string;
   hp: number;
+  maxHp?: number;
+  armor?: number;
   rarity: string;
   pack: string;
+  sourcePack: string;
   image: string;
   officialUrl: string;
+  wikiUrl: string;
+  recommended: boolean;
   skills: Array<{
     name: string;
     description: string;
@@ -19,48 +24,52 @@ type Hero = {
 };
 
 const heroes = heroData as Hero[];
-const FACTIONS = ["魏", "蜀", "吴", "群", "晋", "神"];
-const PACKS = [
+const orderedValues = (values: string[], preferred: string[]) => {
+  const available = new Set(values);
+  return [
+    ...preferred.filter((value) => available.has(value)),
+    ...[...available]
+      .filter((value) => !preferred.includes(value))
+      .sort((left, right) => left.localeCompare(right, "zh-CN")),
+  ];
+};
+const FACTIONS = orderedValues(
+  heroes.map((hero) => hero.faction),
+  ["魏", "蜀", "吴", "群", "晋", "神", "魔"],
+);
+const PACKS = orderedValues(
+  heroes.map((hero) => hero.pack),
+  [
   "标准",
-  "风林火山",
+  "神话再临",
   "一将成名",
   "界限突破",
-  "谋",
+  "SP",
   "神将",
-  "国战",
+  "始计篇",
+  "谋",
+  "星",
+  "势",
   "门阀士族",
+  "友",
+  "骥",
+  "缘",
+  "乱世英杰",
+  "袖里乾坤",
+  "龙血玄黄",
+  "最新武将",
+  "限时武将",
   "魔",
-  "其他",
-];
-const RARITIES = ["普通", "稀有", "史诗", "传说", "限定"];
+  ],
+);
+const RARITIES = orderedValues(
+  heroes.map((hero) => hero.rarity),
+  ["普通", "精良", "精品", "稀有", "史诗", "传说", "限定"],
+);
 const VISIBLE_LIMIT = 18;
 
-const RECOMMENDED_PACKS = [
-  "标准",
-  "风林火山",
-  "一将成名",
-  "界限突破",
-  "神将",
-  "其他",
-];
-
-function isRecommendedHero(hero: Hero) {
-  const catalogId = Number(hero.id);
-
-  if (hero.pack === "标准") return true;
-  if (hero.pack === "一将成名") return true;
-  // 以 2018 年 9 月新服上线为代际分界，保留此前各身份系列的发行批次。
-  if (hero.pack === "风林火山") return catalogId <= 362;
-  if (hero.pack === "界限突破") {
-    return catalogId === 26 || (catalogId >= 299 && catalogId <= 320);
-  }
-  if (hero.pack === "神将") return catalogId >= 201 && catalogId <= 208;
-  if (hero.pack === "其他") return catalogId <= 140;
-  return false;
-}
-
 const recommendedHeroIds = new Set(
-  heroes.filter(isRecommendedHero).map((hero) => hero.id),
+  heroes.filter((hero) => hero.recommended).map((hero) => hero.id),
 );
 
 const counts = {
@@ -179,7 +188,7 @@ function HeroCard({
         <span className="rarity">{hero.rarity}</span>
       </div>
       <img
-        alt={`${hero.name}官方武将立绘`}
+        alt={`${hero.name}移动版武将形象`}
         className="hero-art"
         loading={compact ? "lazy" : "eager"}
         onError={(event) => {
@@ -196,11 +205,16 @@ function HeroCard({
           <p>{hero.pack}</p>
           <h3>{hero.name}</h3>
         </div>
-        <div className="hp" aria-label={`${hero.hp}点体力`}>
+        <div
+          className="hp"
+          aria-label={`${hero.hp}${hero.maxHp ? `/${hero.maxHp}` : ""}点体力${hero.armor ? `，${hero.armor}点护甲` : ""}`}
+        >
           {Array.from({ length: Math.min(hero.hp, 6) }, (_, index) => (
             <i key={index}>◆</i>
           ))}
           {hero.hp > 6 && <b>+{hero.hp - 6}</b>}
+          {hero.maxHp && <b>/{hero.maxHp}</b>}
+          {hero.armor && <b>盾{hero.armor}</b>}
         </div>
       </div>
       {onInspect && (
@@ -248,11 +262,6 @@ export default function Home() {
     ? filteredHeroes.filter((hero) => !usedIds.has(hero.id)).length
     : filteredHeroes.length;
 
-  useEffect(
-    () => setShowAll(false),
-    [query, recommendedOnly, selectedFactions, selectedPacks],
-  );
-
   useEffect(() => {
     if (!inspected) return;
     const close = (event: KeyboardEvent) => {
@@ -284,8 +293,8 @@ export default function Home() {
     }
 
     setRecommendedOnly(true);
-    setSelectedFactions(["魏", "蜀", "吴", "群", "神"]);
-    setSelectedPacks([...RECOMMENDED_PACKS]);
+    setSelectedFactions([...FACTIONS]);
+    setSelectedPacks([...PACKS]);
     setSelectedRarities([...RARITIES]);
   };
 
@@ -340,7 +349,7 @@ export default function Home() {
         </a>
         <div className="header-source">
           <span className="live-dot" />
-          三国杀 OL 官网武将录
+          三国杀移动版身份局
           <b>{heroes.length}</b>
         </div>
       </header>
@@ -351,7 +360,7 @@ export default function Home() {
             <p className="kicker"><span>面杀利器</span> 公平 · 快速 · 不重复</p>
             <h1>定下牌池，<em>抽将开战。</em></h1>
             <p className="intro-note">
-              从官方武将录中按势力、系列与稀有度圈定范围。输入姓名快速搜索，点击武将即可查看势力、体力和完整技能。
+              以三国杀移动版身份局为基准，按势力、系列与品质圈定范围。输入姓名快速搜索，点击武将即可查看势力、体力和现行技能。
             </p>
           </div>
           <label className="search-box">
@@ -359,7 +368,7 @@ export default function Home() {
             <input
               aria-label="按武将名字搜索"
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="搜索武将名，如：赵云、界曹操、谋…"
+              placeholder="搜索武将名，如：赵云、界曹操、谋夏侯惇…"
               type="search"
               value={query}
             />
@@ -415,7 +424,7 @@ export default function Home() {
               groupCounts={counts.rarities}
               onChange={setSelectedRarities}
               selected={selectedRarities}
-              title="稀有度"
+              title="品质"
             />
 
             <section className="draw-settings">
@@ -577,9 +586,9 @@ export default function Home() {
 
         <footer>
           <div className="footer-mark"><span>将</span> 面杀助手</div>
-          <p>数据整理自三国杀 OL 官网公开武将资料，立绘与角色版权归原权利方所有。</p>
-          <a href="https://www.sanguosha.com/hero" rel="noreferrer" target="_blank">
-            查看官方武将录 ↗
+          <p>身份局名录以三国杀移动版为准，现行技能参考移动版官方改版公告与移动版 WIKI。</p>
+          <a href="https://www.sanguosha.cn/index.php/pc/hero-list.html" rel="noreferrer" target="_blank">
+            查看移动版武将录 ↗
           </a>
         </footer>
       </div>
@@ -608,7 +617,7 @@ export default function Home() {
               <span>CHARACTER CARD / 武将信息卡</span>
               <div className="modal-name-row">
                 <div>
-                  <small>{inspected.pack} · {inspected.rarity}</small>
+                  <small>{inspected.sourcePack} · {inspected.rarity}</small>
                   <h2 id="hero-detail-title">{inspected.name}</h2>
                 </div>
                 <b className={`modal-faction faction-${inspected.faction}`}>
@@ -617,8 +626,14 @@ export default function Home() {
               </div>
               <dl>
                 <div><dt>势力</dt><dd>{inspected.faction}</dd></div>
-                <div><dt>体力</dt><dd>{inspected.hp} 点</dd></div>
-                <div><dt>官方编号</dt><dd>#{inspected.id}</dd></div>
+                <div>
+                  <dt>体力</dt>
+                  <dd>
+                    {inspected.hp}{inspected.maxHp ? ` / ${inspected.maxHp}` : ""} 点
+                    {inspected.armor ? ` · 护甲 ${inspected.armor}` : ""}
+                  </dd>
+                </div>
+                <div><dt>系列</dt><dd>{inspected.pack}</dd></div>
               </dl>
               <section className="modal-skills" aria-label="武将技能">
                 <div className="modal-section-title">
@@ -634,8 +649,8 @@ export default function Home() {
                   ))}
                 </div>
               </section>
-              <a href={inspected.officialUrl} rel="noreferrer" target="_blank">
-                打开官方武将详情 ↗
+              <a href={inspected.wikiUrl} rel="noreferrer" target="_blank">
+                核对移动版现行技能 ↗
               </a>
             </div>
           </div>

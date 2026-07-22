@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import heroData from "./data/heroes.json";
 import "./globals.css";
 
 const title = "面杀助手｜三国杀面杀选将器";
 const description =
-  "按势力、系列与稀有度筛选 681 名官方武将，随机抽取、名字搜索，并查看势力、体力与技能。";
+  `按势力、系列与品质筛选 ${heroData.length} 名三国杀移动版身份局武将，随机抽取、名字搜索，并查看势力、体力与现行技能。`;
 
 export async function generateMetadata(): Promise<Metadata> {
   const incoming = await headers();
